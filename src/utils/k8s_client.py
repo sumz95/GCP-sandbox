@@ -1,9 +1,7 @@
-import tomli  # For reading TOML files
+import tomli
 from kubernetes import client, config
-from kubernetes.client.configuration import Configuration
 from kubernetes.client.api_client import ApiClient
 from src.utils.logging_util import get_logger
-import urllib3
 
 logger = get_logger(__name__)
 
@@ -58,49 +56,52 @@ class KubernetesClient:
             if config_mode == "local":
                 logger.debug("Loading kubeconfig for local setup.")
                 config.load_kube_config()
+                self._configure_local_settings()
             elif config_mode == "in-cluster":
                 logger.debug("Loading in-cluster Kubernetes configuration.")
                 config.load_incluster_config()
+                self._configure_in_cluster_settings()
             else:
                 logger.error(f"Invalid config_mode: {config_mode}")
                 raise ValueError(f"Invalid config_mode: {config_mode}. Use 'local' or 'in-cluster'.")
 
-            # Get proxy configuration from the settings
-            http_proxy = self.config.get("proxy", {}).get("http_proxy")
-            https_proxy = self.config.get("proxy", {}).get("https_proxy")
-            verify_ssl = self.config.get("proxy", {}).get("verify_ssl", True)
-
-            # Get the default Kubernetes configuration
-            k8s_config = Configuration.get_default_copy()
-
-            # Configure SSL verification
-            k8s_config.verify_ssl = verify_ssl
-            logger.info(f"SSL verification set to: {verify_ssl}")
-
-            # Initialize the ApiClient with the configuration
-            api_client = ApiClient(configuration=k8s_config)
-
-            # Set the proxy in the ApiClient if provided
-            if https_proxy:
-                logger.info(f"Configuring HTTPS proxy: {https_proxy}")
-                api_client.rest_client.pool_manager = urllib3.ProxyManager(
-                    proxy_url=https_proxy,
-                    cert_reqs="CERT_REQUIRED" if verify_ssl else "CERT_NONE",
-                )
-            elif http_proxy:
-                logger.info(f"Configuring HTTP proxy: {http_proxy}")
-                api_client.rest_client.pool_manager = urllib3.ProxyManager(
-                    proxy_url=http_proxy,
-                    cert_reqs="CERT_REQUIRED" if verify_ssl else "CERT_NONE",
-                )
-
             # Initialize the Kubernetes API client
-            self.client = client.AppsV1Api(api_client)
+            self.client = client.AppsV1Api()
             logger.info("Kubernetes client initialized successfully.")
 
         except Exception as e:
             logger.exception(f"Failed to initialize Kubernetes client: {e}")
             raise
+
+    def _configure_local_settings(self):
+        """
+        Configure settings for the local environment.
+        """
+        logger.info("Applying local environment settings...")
+
+        # Disable SSL verification for local environments if specified
+        verify_ssl = self.config.get("local", {}).get("verify_ssl", False)
+        client.Configuration.get_default_copy().verify_ssl = verify_ssl
+        logger.info(f"SSL verification set to: {verify_ssl}")
+
+        # Configure proxy settings if specified
+        proxy_url = self.config.get("local", {}).get("proxy")
+        if proxy_url:
+            logger.info(f"Configuring proxy: {proxy_url}")
+            api_client = ApiClient()
+            api_client.rest_client.pool_manager.proxy = proxy_url
+
+    def _configure_in_cluster_settings(self):
+        """
+        Configure settings for the in-cluster environment.
+        """
+        logger.info("Applying in-cluster environment settings...")
+
+        # For in-cluster environments, SSL verification is typically required
+        client.Configuration.get_default_copy().verify_ssl = True
+
+        # No proxy required for in-cluster environments
+        logger.info("No proxy settings applied for in-cluster environment.")
 
     def get_client(self):
         """

@@ -1,6 +1,6 @@
 import pytest
 from pytest_bdd import given, when, then, scenarios
-from utils.k8s_client_old import KubernetesClient
+from src.utils.k8s_client_old import KubernetesClient
 from src.utils.logging_util import get_logger
 import tomli  # To parse TOML configuration files
 import time

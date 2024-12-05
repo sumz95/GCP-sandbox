@@ -12,6 +12,6 @@ log_level = "INFO"  # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 [proxy]
-http_proxy = "http://proxy.example.com:8080"
-https_proxy = "https://proxy.example.com:8443"
+http_proxy = ""
+https_proxy = ""
 verify_ssl = true  # Set to false to disable SSL verification
