@@ -1,0 +1,11 @@
+[k8s]
+config_mode = "local"  # Use "local" or "in-cluster"
+namespace = "scale-test"
+deployment_name = "scale-test"
+
+[scaling]
+timeout = 600  # Timeout in seconds for scaling operations
+interval = 10   # Interval in seconds to check scaling status
+
+[logging]
+log_level = "INFO"  # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
