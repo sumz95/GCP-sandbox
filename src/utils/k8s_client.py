@@ -49,6 +49,21 @@ class KubernetesClient:
         """
         Initializes the Kubernetes client based on the configuration mode.
         """
+        # Set proxy environment variables
+        http_proxy = os.getenv("http_proxy")
+        https_proxy = os.getenv("https_proxy")
+        no_proxy = os.getenv("no_proxy")
+
+        if http_proxy:
+            os.environ["http_proxy"] = http_proxy
+            logger.debug(f"HTTP proxy set to {http_proxy}")
+        if https_proxy:
+            os.environ["https_proxy"] = https_proxy
+            logger.debug(f"HTTPS proxy set to {https_proxy}")
+        if no_proxy:
+            os.environ["no_proxy"] = no_proxy
+            logger.debug(f"No proxy set to {no_proxy}")
+
         try:
             logger.info("Initializing Kubernetes client...")
             if self.config_mode == "local":
