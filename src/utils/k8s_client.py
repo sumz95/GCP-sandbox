@@ -1,4 +1,5 @@
 import os
+import tomli  # For reading TOML files
 from kubernetes import client, config
 from src.utils.logging_util import get_logger
 
@@ -10,9 +11,39 @@ class KubernetesClient:
     """
 
     def __init__(self, config_file="config/settings.toml"):
-        self.config_mode = "local"  # Default to local mode
+        """
+        Initializes the Kubernetes client based on configuration.
+
+        Args:
+            config_file (str): Path to the configuration file.
+        """
+        self.config_mode = self._load_config(config_file)
         self.client = None
         self._initialize_client()
+
+    def _load_config(self, config_file):
+        """
+        Load the config_mode from the given TOML configuration file.
+
+        Args:
+            config_file (str): Path to the configuration file.
+
+        Returns:
+            str: The config_mode value from the configuration file.
+        """
+        logger.info(f"Loading configuration from {config_file}...")
+        try:
+            with open(config_file, "rb") as file:
+                config_data = tomli.load(file)
+                config_mode = config_data.get("k8s", {}).get("config_mode", "local")
+                logger.info(f"Config mode loaded: {config_mode}")
+                return config_mode
+        except FileNotFoundError:
+            logger.error(f"Configuration file not found: {config_file}. Defaulting to 'local' mode.")
+            return "local"
+        except Exception as e:
+            logger.exception(f"Failed to load configuration: {e}. Defaulting to 'local' mode.")
+            return "local"
 
     def _initialize_client(self):
         """
