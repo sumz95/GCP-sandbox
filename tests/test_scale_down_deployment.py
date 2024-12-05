@@ -1,49 +1,17 @@
 import pytest
 from pytest_bdd import given, when, then, scenarios
-from src.utils.k8s_client import KubernetesClient
 from src.utils.logging_util import get_logger
 import tomli  # To parse TOML configuration files
 import time
+from src.utils.config_util import load_config
 
 logger = get_logger(__name__)
 
 # Link the feature file
 scenarios("../features/scale_down_deployment.feature")
 
-
-def load_config(config_file="config/settings.toml"):
-    """
-    Load configuration from a TOML file.
-
-    Args:
-        config_file (str): Path to the configuration file.
-
-    Returns:
-        dict: Parsed configuration data.
-    """
-    logger.info(f"Loading configuration from {config_file}...")
-    try:
-        with open(config_file, "rb") as file:
-            config = tomli.load(file)
-        logger.info("Configuration loaded successfully.")
-        return config
-    except Exception as e:
-        logger.error(f"Failed to load configuration: {e}")
-        raise
-
-
 # Load configuration once at module level
 CONFIG = load_config()
-
-
-@pytest.fixture(scope="module")
-def k8s_client():
-    """
-    Fixture to set up Kubernetes API client based on configuration.
-    """
-    config_file = "config/settings.toml"  # Path to the TOML configuration file
-    logger.info(f"Initializing Kubernetes client with config file: {config_file}")
-    return KubernetesClient(config_file=config_file).get_client()
 
 
 @given("a Kubernetes cluster is running")
