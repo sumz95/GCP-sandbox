@@ -19,11 +19,29 @@ def pytest_runtest_protocol(item):
     duration = end_time - start_time
     logger.info(f"Finished test: {item.name} in {duration:.3f} seconds.")
 
+
 @pytest.fixture(scope="module")
 def k8s_client():
     """
-    Fixture to set up Kubernetes API client based on configuration.
+    Fixture to provide Kubernetes API clients dynamically.
     """
-    config_file = "config/settings.toml"  # Path to the TOML configuration file
+    config_file = "config/settings.toml"
     logger.info(f"Initializing Kubernetes client with config file: {config_file}")
-    return KubernetesClient(config_file=config_file).get_client()    
+    k8s = KubernetesClient(config_file=config_file)
+
+    def get_client(api_type):
+        """
+        Retrieve the specified Kubernetes API client.
+
+        Args:
+            api_type (str): Type of Kubernetes API client (e.g., "AppsV1Api", "CoreV1Api").
+
+        Returns:
+            object: The requested Kubernetes API client instance.
+        """
+        logger.debug(f"Fetching client for API type: {api_type}")
+        return k8s.get_client(api_type)
+
+    return get_client
+
+

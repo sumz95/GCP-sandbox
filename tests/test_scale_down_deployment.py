@@ -1,7 +1,5 @@
-import pytest
 from pytest_bdd import given, when, then, scenarios
 from src.utils.logging_util import get_logger
-import tomli  # To parse TOML configuration files
 import time
 from src.utils.config_util import load_config
 
@@ -27,8 +25,11 @@ def verify_deployment_exists(k8s_client):
     """Ensure the specified deployment exists."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
+
+    # Retrieve AppsV1Api client for deployment operations
+    apps_api = k8s_client("AppsV1Api")
     logger.info(f"Checking if deployment '{deployment_name}' exists in namespace '{namespace}'...")
-    response = k8s_client.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+    response = apps_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
     assert response is not None, f"Deployment {deployment_name} does not exist in namespace {namespace}."
     logger.info(f"Deployment '{deployment_name}' exists.")
 
@@ -42,14 +43,16 @@ def scale_deployment_to_1(k8s_client):
     timeout = CONFIG["scaling"]["timeout"]
     interval = CONFIG["scaling"]["interval"]
 
+    # Retrieve AppsV1Api client for deployment operations
+    apps_api = k8s_client("AppsV1Api")
     logger.info(f"Scaling deployment '{deployment_name}' in namespace '{namespace}' to {replicas} replicas.")
     body = {"spec": {"replicas": replicas}}
-    k8s_client.patch_namespaced_deployment_scale(name=deployment_name, namespace=namespace, body=body)
+    apps_api.patch_namespaced_deployment_scale(name=deployment_name, namespace=namespace, body=body)
 
     logger.info(f"Waiting for deployment '{deployment_name}' to scale to {replicas} replicas...")
     start_time = time.time()
     while time.time() - start_time < timeout:
-        response = k8s_client.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+        response = apps_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
         logger.debug(f"Current replicas: {response.status.replicas}, Available replicas: {response.status.available_replicas}")
         if (
             response.status.replicas == replicas
@@ -68,8 +71,11 @@ def verify_single_replica(k8s_client):
     """Verify that the deployment has scaled to 1 replica."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
+
+    # Retrieve AppsV1Api client for deployment operations
+    apps_api = k8s_client("AppsV1Api")
     logger.info(f"Verifying deployment '{deployment_name}' has exactly 1 replica...")
-    response = k8s_client.read_namespaced_deployment(name=deployment_name, namespace=namespace)
+    response = apps_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
     assert response.status.replicas == 1, f"Expected 1 replica but got {response.status.replicas}."
     assert response.status.available_replicas == 1, (
         f"Not all replicas are available. Only {response.status.available_replicas} are available."

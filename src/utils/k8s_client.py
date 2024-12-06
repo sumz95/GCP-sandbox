@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 class KubernetesClient:
     """
-    Utility class to set up and provide a Kubernetes API client.
+    Utility class to set up and provide Kubernetes API clients.
     """
 
     def __init__(self, config_file="config/settings.toml"):
@@ -18,7 +18,7 @@ class KubernetesClient:
             config_file (str): Path to the configuration file.
         """
         self.config = self._load_config(config_file)
-        self.client = None
+        self.api_clients = {}  # Cache for API clients
         self._initialize_client()
 
     def _load_config(self, config_file):
@@ -65,10 +65,7 @@ class KubernetesClient:
                 logger.error(f"Invalid config_mode: {config_mode}")
                 raise ValueError(f"Invalid config_mode: {config_mode}. Use 'local' or 'in-cluster'.")
 
-            # Initialize the Kubernetes API client
-            self.client = client.AppsV1Api()
-            logger.info("Kubernetes client initialized successfully.")
-
+            logger.info("Kubernetes configuration initialized successfully.")
         except Exception as e:
             logger.exception(f"Failed to initialize Kubernetes client: {e}")
             raise
@@ -103,11 +100,23 @@ class KubernetesClient:
         # No proxy required for in-cluster environments
         logger.info("No proxy settings applied for in-cluster environment.")
 
-    def get_client(self):
+    def get_client(self, api_type):
         """
-        Returns the Kubernetes API client instance.
+        Retrieve the specified Kubernetes API client.
+
+        Args:
+            api_type (str): Type of Kubernetes API client (e.g., "AppsV1Api", "CoreV1Api").
 
         Returns:
-            client.AppsV1Api: Configured Kubernetes API client.
+            object: The requested Kubernetes API client instance.
         """
-        return self.client
+        if api_type not in self.api_clients:
+            logger.info(f"Initializing API client for: {api_type}")
+            if api_type == "AppsV1Api":
+                self.api_clients[api_type] = client.AppsV1Api()
+            elif api_type == "CoreV1Api":
+                self.api_clients[api_type] = client.CoreV1Api()
+            else:
+                logger.error(f"Unsupported API client type: {api_type}")
+                raise ValueError(f"Unsupported API client type: {api_type}")
+        return self.api_clients[api_type]
