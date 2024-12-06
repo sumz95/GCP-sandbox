@@ -9,4 +9,4 @@ Feature: Scale Deployment with Timing Metrics
     When I scale "scale-test" to 1000 replicas
     Then new nodes should become ready within 240 seconds
     And all replicas of the deployment should be running and available within 240 seconds
-    And I log the node readiness and pod readiness times
+    Then I log the node readiness and pod readiness times
