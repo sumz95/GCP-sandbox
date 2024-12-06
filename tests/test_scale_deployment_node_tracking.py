@@ -48,28 +48,30 @@ def scale_deployment(k8s_client):
 
 @then("new nodes should become ready within 240 seconds")
 def verify_nodes_ready(k8s_client):
-    """Measure the time taken for nodes to become ready."""
-    # Retrieve CoreV1Api client
+    """Measure the time taken for all nodes to become ready."""
     core_api = k8s_client("CoreV1Api")
     node_ready_start_time = time.time()
     timeout = 240  # seconds
     interval = 10  # seconds
-    all_nodes_ready = False
 
-    logger.info("Waiting for new nodes to become ready...")
-    while not all_nodes_ready and (time.time() - node_ready_start_time) < timeout:
+    logger.info("Waiting for all new nodes to become ready...")
+    while time.time() - node_ready_start_time < timeout:
         nodes = core_api.list_node().items
-        all_nodes_ready = all(
-            any(condition.type == "Ready" and condition.status == "True" for condition in node.status.conditions)
+        ready_nodes = [
+            node.metadata.name
             for node in nodes
-        )
-        if all_nodes_ready:
-            break
+            if any(condition.type == "Ready" and condition.status == "True" for condition in node.status.conditions)
+        ]
+        logger.debug(f"Ready nodes: {ready_nodes}")
+
+        # Check if all nodes are ready
+        if len(ready_nodes) == len(nodes):
+            total_node_ready_time = time.time() - node_ready_start_time
+            logger.info(f"All nodes became ready in {total_node_ready_time:.2f} seconds.")
+            return
         time.sleep(interval)
 
-    total_node_ready_time = time.time() - node_ready_start_time
-    assert all_nodes_ready, "New nodes did not become ready within the timeout."
-    logger.info(f"All nodes became ready in {total_node_ready_time:.2f} seconds.")
+    raise RuntimeError("Not all nodes became ready within the timeout.")
 
 
 @then("all replicas of the deployment should be running and available within 240 seconds")
@@ -77,31 +79,31 @@ def verify_pods_ready(k8s_client):
     """Measure the time taken for all replicas to be scheduled and available."""
     namespace = CONFIG["k8s"]["namespace"]
     deployment_name = CONFIG["k8s"]["deployment_name"]
-
-    # Retrieve AppsV1Api client
     apps_api = k8s_client("AppsV1Api")
+
     pod_schedule_start_time = time.time()
     timeout = 240  # seconds
     interval = 10  # seconds
-    pods_ready = False
 
     logger.info(f"Waiting for deployment '{deployment_name}' to have all replicas running and available...")
-    while not pods_ready and (time.time() - pod_schedule_start_time) < timeout:
+    while time.time() - pod_schedule_start_time < timeout:
         response = apps_api.read_namespaced_deployment(name=deployment_name, namespace=namespace)
         pods_ready = (
             response.status.replicas == 1000
             and response.status.available_replicas == 1000
         )
+        logger.debug(f"Deployment status: {response.status.replicas} replicas, {response.status.available_replicas} available replicas.")
+
         if pods_ready:
-            break
+            total_pod_ready_time = time.time() - pod_schedule_start_time
+            logger.info(f"All replicas became ready in {total_pod_ready_time:.2f} seconds.")
+            return
         time.sleep(interval)
 
-    total_pod_ready_time = time.time() - pod_schedule_start_time
-    assert pods_ready, f"Deployment '{deployment_name}' did not scale to 1000 replicas within {timeout} seconds."
-    logger.info(f"All pods became ready in {total_pod_ready_time:.2f} seconds.")
+    raise RuntimeError(f"Deployment '{deployment_name}' did not scale to 1000 replicas within the timeout.")
 
 
 @then("I log the timing metrics for node and pod readiness")
-def log_timing(k8s_client):
+def log_timing():
     """Log timing metrics for nodes and pods."""
     logger.info("Timing metrics have been logged for both nodes and pods readiness.")
