@@ -1,3 +1,4 @@
+import os
 import tomli
 from kubernetes import client, config
 from kubernetes.client.api_client import ApiClient
@@ -20,6 +21,7 @@ class KubernetesClient:
         """
         self.config = self._load_config(config_file)
         self.api_clients = {}  # Cache for API clients
+        self.proxy_manager = None  # ProxyManager instance
         self._initialize_client()
 
     def _load_config(self, config_file):
@@ -57,11 +59,12 @@ class KubernetesClient:
             if config_mode == "local":
                 logger.debug("Loading kubeconfig for local setup.")
                 config.load_kube_config()
-                self._configure_local_settings()
+                self._configure_proxy()
+                self._configure_ssl_settings()
             elif config_mode == "in-cluster":
                 logger.debug("Loading in-cluster Kubernetes configuration.")
                 config.load_incluster_config()
-                self._configure_in_cluster_settings()
+                self._configure_ssl_settings()
             else:
                 logger.error(f"Invalid config_mode: {config_mode}")
                 raise ValueError(f"Invalid config_mode: {config_mode}. Use 'local' or 'in-cluster'.")
@@ -71,35 +74,45 @@ class KubernetesClient:
             logger.exception(f"Failed to initialize Kubernetes client: {e}")
             raise
 
-    def _configure_local_settings(self):
+    def _configure_proxy(self):
         """
-        Configure settings for the local environment.
+        Configure HTTP and HTTPS proxy settings using ProxyManager.
         """
-        logger.info("Applying local environment settings...")
+        http_proxy = self.config.get("local", {}).get("http_proxy")
+        https_proxy = self.config.get("local", {}).get("https_proxy")
+        no_proxy = self.config.get("local", {}).get("no_proxy")
 
-        # Disable SSL verification for local environments if specified
-        verify_ssl = self.config.get("local", {}).get("verify_ssl", False)
+        if http_proxy or https_proxy:
+            proxy_url = https_proxy or http_proxy
+            logger.info(f"Configuring proxy: {proxy_url}, NO_PROXY: {no_proxy}")
+            self.proxy_manager = ProxyManager(
+                proxy_url=proxy_url,
+                proxy_headers=None,  # Add custom headers if necessary
+            )
+
+            # Apply ProxyManager to Kubernetes client
+            api_client = ApiClient()
+            api_client.rest_client.pool_manager = self.proxy_manager
+
+            # Optionally, set environment variables for external tools
+            if http_proxy:
+                os.environ["http_proxy"] = http_proxy
+            if https_proxy:
+                os.environ["https_proxy"] = https_proxy
+            if no_proxy:
+                os.environ["no_proxy"] = no_proxy
+
+            logger.info("Proxy settings applied successfully.")
+        else:
+            logger.info("No proxy settings provided. Skipping proxy configuration.")
+
+    def _configure_ssl_settings(self):
+        """
+        Configure SSL verification settings for the Kubernetes client.
+        """
+        verify_ssl = self.config.get("local", {}).get("verify_ssl", True)
         client.Configuration.get_default_copy().verify_ssl = verify_ssl
         logger.info(f"SSL verification set to: {verify_ssl}")
-
-        # Configure proxy settings if specified
-        proxy_url = self.config.get("local", {}).get("proxy")
-        if proxy_url:
-            logger.info(f"Configuring proxy: {proxy_url}")
-            api_client = ApiClient()
-            api_client.rest_client.pool_manager = ProxyManager(proxy_url)
-
-    def _configure_in_cluster_settings(self):
-        """
-        Configure settings for the in-cluster environment.
-        """
-        logger.info("Applying in-cluster environment settings...")
-
-        # For in-cluster environments, SSL verification is typically required
-        client.Configuration.get_default_copy().verify_ssl = True
-
-        # No proxy required for in-cluster environments
-        logger.info("No proxy settings applied for in-cluster environment.")
 
     def get_client(self, api_type):
         """
