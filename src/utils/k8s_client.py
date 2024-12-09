@@ -1,6 +1,7 @@
 import tomli
 from kubernetes import client, config
 from kubernetes.client.api_client import ApiClient
+from urllib3 import ProxyManager
 from src.utils.logging_util import get_logger
 
 logger = get_logger(__name__)
@@ -86,7 +87,7 @@ class KubernetesClient:
         if proxy_url:
             logger.info(f"Configuring proxy: {proxy_url}")
             api_client = ApiClient()
-            api_client.rest_client.pool_manager.proxy = proxy_url
+            api_client.rest_client.pool_manager = ProxyManager(proxy_url)
 
     def _configure_in_cluster_settings(self):
         """
