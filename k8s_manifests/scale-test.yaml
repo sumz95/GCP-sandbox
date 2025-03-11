@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scale-test
+  namespace: scale-test
+  labels: # Added labels to the Deployment metadata.
+    app: date-logger
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: date-logger
+  template:
+    metadata:
+      labels:
+        app: date-logger
+    spec:
+      containers:
+      - name: date-logger
+        image: busybox:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            date
+            sleep 30
+          done
+        resources:
+          requests:
+            cpu: "5"        

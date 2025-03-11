@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: peak-logging
+  namespace: scale-test
+  labels:
+    app: lots-of-logs
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: lots-of-logs
+  template:
+    metadata:
+      labels:
+        app: lots-of-logs
+    spec:
+      containers:
+      - name: lots-of-logs
+        image: busybox:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            date;
+            for i in $(seq 1 10000); do
+              echo "This is a log entry $i. Repeating to generate some volume of log data to test logging."
+            done
+            sleep 600 # Sleep for 60 seconds (1 minute)
+          done
