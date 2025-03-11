@@ -25,7 +25,7 @@ spec:
           while true; do
             date;
             for i in $(seq 1 10000); do
-              echo "This is a log entry $i. Repeating to generate some volume of log data to test logging."
+              echo "This is a log entry $i. Repeating to generate some volume of log data to test logging. Each Entry around 100 Bytes"
             done
             sleep 600 # Sleep for 60 seconds (1 minute)
           done
