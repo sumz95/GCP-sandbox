@@ -1,0 +1,24 @@
+apiVersion: cloud.google.com/v1
+kind: ComputeClass
+metadata:
+  name: scale-testing-cc
+spec:
+  priorities:
+  - machineFamily: n2
+    spot: true
+    minCores: 64
+  - machineFamily: n1
+    spot: true
+    minCores: 32    
+  - machineFamily: e2                                                                                                                                                                                        
+    minCores: 32                                                                                                                                                                                              
+  - machineFamily: n2
+    spot: false 
+  - machineFamily: n1
+    spot: false                                                                                                                                                                                            
+  - machineFamily: e2                                                                                                                                                                                        
+    spot: false
+  activeMigration:
+    optimizeRulePriority: false
+  nodePoolAutoCreation:
+    enabled: true

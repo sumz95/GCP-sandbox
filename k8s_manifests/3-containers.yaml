@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scale-test
+  name: 3-container-scale-test
   namespace: scale-test
   labels:
     app: date-logger-extended
@@ -15,10 +15,10 @@ spec:
       labels:
         app: date-logger-extended
     spec:
-      initContainers:
-      - name: init-container
-        image: busybox:latest
-        command: ['sh', '-c', 'echo "Initializing..." && sleep 5'] # Example init task
+      # initContainers:
+      # - name: init-container
+      #   image: busybox:latest
+      #   command: ['sh', '-c', 'echo "Initializing..." && sleep 5'] # Example init task
       containers:
       - name: main-container
         image: busybox:latest
@@ -29,10 +29,13 @@ spec:
           while true; do
             date
             echo "Main container running"
-            sleep 30
+            sleep 60
           done
-      - name: sidecar-container
-        image: nginx:latest
-        ports:
-        - containerPort: 80
-        command: ['sh', '-c', 'echo "Sidecar running" && tail -f /dev/null'] # just keeps it alive.
+        resources:
+          requests:
+            cpu: "2000m"            
+      # - name: sidecar-container
+      #   image: nginx:latest
+      #   ports:
+      #   - containerPort: 80
+      #   command: ['sh', '-c', 'echo "Sidecar running" && tail -f /dev/null'] # just keeps it alive.
