@@ -6,12 +6,12 @@ This repository contains tests for scaling Kubernetes deployments, implemented u
 ## **Features**
 - **Scale Up Deployment**: Tests to scale a deployment to a high number of replicas (e.g., 10,000).
 - **Scale Down Deployment**: Tests to scale a deployment down to a minimal number of replicas (e.g., 1).
-- **Configurable**: Supports local and in-cluster execution by dynamically loading configurations.
 
 ## **Directory Structure**
 ```
 ├── config/             # Configuration files (e.g., settings.yaml)
 ├── features/           # Gherkin feature files for behavior-driven testing
+├── k8s_manifests/      # kubernetes Deployments that are used for testing.
 ├── src/                # Source code for utilities and helpers
 │   └── utils/          # Kubernetes client utility and other shared modules
 ├── tests/              # Test files using pytest-bdd for Gherkin scenarios
