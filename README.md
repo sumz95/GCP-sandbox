@@ -51,6 +51,19 @@ scaling:
   interval: 10
 ```
 
+## **Developer Guide**
+
+### **Running Locally**
+1. Ensure the `config_mode` in `settings.yaml` is set to `local`.
+2. Ensure `kubectl` is properly configured and can access your cluster:
+   ```bash
+   kubectl get nodes
+   ```
+3. Run the tests:
+   ```bash
+   pytest -v tests/
+   ```
+
 ## **Running the Tests**
 
 ### **1. Running All Tests**
@@ -90,41 +103,6 @@ pytest --cov=src --cov-report=html tests/
 ```
 
 The coverage report will be available in the `htmlcov/` directory.
-
-## **Developer Guide**
-
-### **Running Locally**
-1. Ensure the `config_mode` in `settings.yaml` is set to `local`.
-2. Ensure `kubectl` is properly configured and can access your cluster:
-   ```bash
-   kubectl get nodes
-   ```
-3. Run the tests:
-   ```bash
-   pytest -v tests/
-   ```
-
-### **Running in Cluster**
-1. Ensure the `config_mode` in `settings.yaml` is set to `in-cluster`.
-2. Deploy the tests as a Kubernetes job or pod. Example Job spec:
-```yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: test-scale-deployment
-spec:
-  template:
-    spec:
-      containers:
-      - name: pytest
-        image: your-custom-image:latest
-        command: ["pytest", "-v", "tests/"]
-        env:
-        - name: CONFIG_MODE
-          value: "in-cluster"
-      restartPolicy: Never
-  backoffLimit: 4
-```
 
 ## **Extending the Tests**
 - Add new Gherkin scenarios to `features/` for additional functionality.
