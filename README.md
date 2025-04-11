@@ -35,22 +35,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### **3. Configuration**
-- Modify the `config/settings.yaml` file to specify the desired `config_mode`:
-  - Use `local` for local execution.
-  - Use `in-cluster` for running inside a Kubernetes cluster.
-- Example `settings.yaml`:
-```yaml
-k8s:
-  config_mode: local
-  namespace: default
-  deployment_name: scale-test
-
-scaling:
-  timeout: 600
-  interval: 10
-```
-
 ## **Developer Guide**
 
 ### **Running Locally**
